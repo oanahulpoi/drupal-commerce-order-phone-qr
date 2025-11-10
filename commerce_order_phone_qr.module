@@ -1,0 +1,114 @@
+<?php
+
+/**
+ * @file
+ * Adds QR code for shipping phone number in Commerce order quick edit section.
+ */
+
+/**
+ * Implements hook_entity_view().
+ */
+function commerce_order_phone_qr_entity_view($entity, $type, $view_mode, $langcode) {
+  // Only process shipping customer profiles when displayed as part of an order.
+  if ($type == 'commerce_customer_profile' &&
+      isset($entity->type) &&
+      $entity->type == 'shipping' &&
+      in_array($view_mode, array('customer', 'administrator'))) {
+    // Add CSS.
+    $css_path = drupal_get_path('module', 'commerce_order_phone_qr') .
+        '/commerce_order_phone_qr.css';
+    drupal_add_css($css_path);
+
+    // Check if this profile has a phone number.
+    if (!empty($entity->field_telefon[LANGUAGE_NONE][0]['value'])) {
+      $phone_number = $entity->field_telefon[LANGUAGE_NONE][0]['value'];
+
+      // Generate QR code.
+      $qr_code = commerce_order_phone_qr_generate_qr($phone_number);
+
+      if ($qr_code) {
+        // Add QR code after the phone field.
+        // Match the structure of the phone field for consistency.
+        $qr_markup = '<div class="field field-name-field-telefon-qr ' .
+            'field-type-text field-label-inline inline">' .
+            '<div class="field-label">QR Code:&nbsp;</div>' .
+            '<div class="field-items">' .
+            '<div class="field-item even">' .
+            '<div class="commerce-order-phone-qr-code">' .
+            $qr_code . '</div></div></div></div>';
+
+        // Add QR code to the entity content.
+        $entity->content['field_telefon_qr'] = array(
+          '#type' => 'markup',
+          '#markup' => $qr_markup,
+          '#weight' => 100,
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Generate QR code for phone number.
+ *
+ * @param string $phone_number
+ *   The phone number to encode in QR code.
+ *
+ * @return string|false
+ *   HTML img tag with QR code or FALSE on failure.
+ */
+function commerce_order_phone_qr_generate_qr($phone_number) {
+  // Check if QR code library exists.
+  $library_path = NULL;
+
+  // Try libraries_get_path if libraries module is available.
+  if (function_exists('libraries_get_path')) {
+    $library_path = libraries_get_path('phpqrcode');
+  }
+
+  // Try standard libraries folder path.
+  if (!$library_path || !file_exists($library_path . '/qrlib.php')) {
+    $library_path = DRUPAL_ROOT . '/sites/all/libraries/phpqrcode';
+  }
+
+  // Check if library exists.
+  $qrlib_file = $library_path . '/qrlib.php';
+  if (!file_exists($qrlib_file)) {
+    watchdog('commerce_order_phone_qr',
+        'QR code library not found at @path',
+        array('@path' => $qrlib_file),
+        WATCHDOG_WARNING);
+    return FALSE;
+  }
+
+  // Include QR code library.
+  require_once $qrlib_file;
+
+  // Check if QRcode class exists.
+  if (!class_exists('QRcode')) {
+    watchdog('commerce_order_phone_qr',
+        'QRcode class not found in library',
+        array(),
+        WATCHDOG_WARNING);
+    return FALSE;
+  }
+
+  // Generate QR code as base64 data URI.
+  ob_start();
+  QRcode::png($phone_number, FALSE, QR_ECLEVEL_L, 4, 2);
+  $qr_image_data = ob_get_contents();
+  ob_end_clean();
+
+  if ($qr_image_data) {
+    $base64 = base64_encode($qr_image_data);
+    $data_uri = 'data:image/png;base64,' . $base64;
+    $alt_text = check_plain($phone_number);
+    $title_text = t('Scan to get phone number');
+    $img_tag = '<img src="' . $data_uri . '" alt="' . $alt_text .
+        '" title="' . $title_text .
+        '" class="commerce-order-phone-qr-image" />';
+    return $img_tag;
+  }
+
+  return FALSE;
+}

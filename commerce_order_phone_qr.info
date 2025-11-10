@@ -1,0 +1,9 @@
+name = Commerce Order Phone QR
+description = Adds QR code for shipping phone number in Commerce order quick edit section.
+core = 7.x
+dependencies[] = commerce_order
+dependencies[] = commerce_customer
+dependencies[] = commerce_backoffice_order
+
+package = Epectasys
+

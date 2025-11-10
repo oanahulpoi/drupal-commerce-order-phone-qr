@@ -1,0 +1,18 @@
+/**
+ * @file
+ * Styles for Commerce Order Phone QR module.
+ */
+
+.commerce-order-phone-qr-code {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.commerce-order-phone-qr-image {
+  max-width: 150px;
+  height: auto;
+  border: 1px solid #ccc;
+  padding: 5px;
+  background: #fff;
+}
+
