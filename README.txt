@@ -99,6 +99,8 @@ For issues, feature requests, or contributions, please use the GitHub issue trac
 
 AUTHOR
 ------
+Oana Hulpoi
+groza.oana@gmail.com
 
 Created for Drupal Commerce sites requiring QR code display for shipping phone numbers.
 
